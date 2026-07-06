@@ -1,0 +1,24 @@
+{
+  "name": "skills-manager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "build-exe": "node build-exe.mjs",
+    "dist": "node build-exe.mjs && node -e \"require('child_process').execSync('powershell -NoLogo -NoProfile -Command \\\"Compress-Archive -Path SkillManager.exe,agents.json,translations.json -DestinationPath SkillManager.zip -Force\\\"', {stdio:'inherit'})\""
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.3",
+    "esbuild": "^0.28.1",
+    "postject": "^1.0.0-alpha.6",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

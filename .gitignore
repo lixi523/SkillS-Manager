@@ -1,0 +1,7 @@
+node_modules
+dist
+SkillManager.exe
+SkillManager.zip
+*.blob
+agents.json
+translations.json

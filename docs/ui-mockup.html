@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillS Manager — 设计原型</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6f8;
+    color: #1a1a2e;
+    padding: 32px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* ── header ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 22px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .header h1 small { font-size: 13px; font-weight: 400; color: #888; margin-left: 8px; }
+  .header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .last-updated { font-size: 12px; color: #999; white-space: nowrap; }
+  .btn-refresh {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 16px;
+    background: #2563eb; color: #fff;
+    border: none; border-radius: 6px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+  }
+  .btn-refresh:hover { background: #1d4ed8; }
+  .btn-refresh svg { width: 14px; height: 14px; }
+
+  /* ── filter bar ── */
+  .filter-bar {
+    display: flex; gap: 8px; margin-bottom: 16px;
+  }
+  .filter-bar input {
+    flex: 1; min-width: 0; padding: 8px 12px;
+    border: 1px solid #d1d5db; border-radius: 6px;
+    font-size: 13px; outline: none;
+  }
+  .filter-bar input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
+  .filter-bar select {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db; border-radius: 6px;
+    font-size: 13px; background: #fff; outline: none;
+  }
+
+  /* ── table ── */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-wrap {
+    background: #fff; border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  thead th {
+    background: #f8fafc;
+    padding: 10px 14px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.4px; color: #64748b;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  tbody tr { border-bottom: 1px solid #f1f5f9; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody td { padding: 12px 14px; font-size: 13px; vertical-align: top; }
+  .col-name { font-weight: 600; white-space: nowrap; }
+  .col-agents { display: flex; flex-wrap: wrap; gap: 4px; }
+  .agent-badge {
+    display: inline-block;
+    padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 500;
+    background: #eef2ff; color: #4338ca;
+    white-space: nowrap;
+  }
+  .agent-badge.opencode { background: #eef2ff; color: #4338ca; }
+  .agent-badge.cursor   { background: #f0fdf4; color: #166534; }
+  .agent-badge.windsurf { background: #fef2f2; color: #991b1b; }
+  .col-desc { max-width: 350px; }
+  .col-usage { max-width: 260px; }
+  .desc-zh { color: #64748b; font-size: 12px; line-height: 1.5; }
+  .col-github { text-align: center; }
+  .github-link {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 6px;
+    color: #64748b; text-decoration: none;
+  }
+  .github-link:hover { background: #f1f5f9; color: #1a1a2e; }
+  .github-link svg { width: 18px; height: 18px; }
+  .cmd-tag {
+    display: inline-block; margin: 1px 2px;
+    padding: 1px 6px; border-radius: 3px;
+    background: #f0fdf4; color: #166534;
+    font-family: "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 11px;
+  }
+
+  /* ── status bar ── */
+  .status-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    font-size: 12px; color: #64748b;
+  }
+  .empty { padding: 48px; text-align: center; color: #94a3b8; font-size: 14px; }
+  .loading {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid #e2e8f0; border-top-color: #2563eb;
+    border-radius: 50%; animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── responsive ── */
+  @media (max-width: 768px) {
+    body { padding: 16px; }
+    .header { flex-direction: column; align-items: stretch; }
+    .header-actions { justify-content: space-between; }
+    .filter-bar { flex-direction: column; }
+    .col-desc, .col-usage { max-width: none; }
+  }
+  @media (max-width: 480px) {
+    .last-updated { display: none; }
+    thead th, tbody td { padding: 8px 10px; }
+    .col-name { font-size: 12px; }
+    .desc-zh { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>
+      ⚡ SkillS Manager
+      <small>本机 Agent Skill 清单</small>
+    </h1>
+    <div class="header-actions">
+      <span class="last-updated">上次更新: 2026-07-06 15:30</span>
+      <button class="btn-refresh" onclick="fakeRefresh(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        刷新
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" placeholder="搜索 Skill 名称或说明…">
+    <select>
+      <option value="">全部 Agent</option>
+      <option>opencode</option>
+      <option>cursor</option>
+      <option>windsurf</option>
+    </select>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:160px">名称</th>
+          <th style="width:110px">已安装 Agent</th>
+          <th style="width:320px">说明</th>
+          <th style="width:240px">用法</th>
+          <th style="width:180px">命令</th>
+          <th style="width:80px">GitHub</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-name">agent-reach</td>
+          <td class="col-agents">
+            <span class="agent-badge opencode">opencode</span>
+            <span class="agent-badge cursor">cursor</span>
+          </td>
+          <td class="col-desc">
+            <div class="desc-zh">多平台互联网调研与内容获取工具。支持 13 个平台（小红书、Twitter/X、B站、Reddit、V2EX、LinkedIn、YouTube、GitHub 代码搜索、小宇宙播客、雪球股票行情、RSS 订阅、任意网页 URL）。多后端路由（OpenCLI / 各平台专用 CLI / API），其中 6 个渠道零配置。</div>
+          </td>
+          <td class="col-usage">
+            <div class="desc-zh">互联网调研/搜索/查找场景。按平台分类路由（搜索/社交/求职/开发/网页/视频）。运行 agent-reach doctor --json 查看各平台当前使用的后端。</div>
+          </td>
+          <td class="col-cmds">
+            <span class="cmd-tag">agent-reach doctor</span>
+          </td>
+          <td class="col-github">
+            <a class="github-link" href="https://github.com/Panniantong/Agent-Reach" target="_blank" title="查看源码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td class="col-name">docx</td>
+          <td class="col-agents"><span class="agent-badge opencode">opencode</span></td>
+          <td class="col-desc">
+            <div class="desc-zh">端到端 Word 文档创建与操作。将 Markdown 或结构化文本转为精美的 Word 输出。填充可复用模板（{{token}} 或参考文档）。应用 CJK 排版默认值。使用 docx-js 从零生成定制文档。底层 OOXML 修补，支持修订标记和批注。</div>
+          </td>
+          <td class="col-usage">
+            <div class="desc-zh">触发场景：Word 文档、.docx 文件、报告、备忘录、合同、会议纪要、Markdown 转 Word、中文排版、修订标记、批注、OOXML 编辑。</div>
+          </td>
+          <td class="col-cmds"><span class="cmd-tag">docx</span></td>
+          <td class="col-github">
+            <a class="github-link" href="#" target="_blank" title="查看源码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td class="col-name">xlsx</td>
+          <td class="col-agents">
+            <span class="agent-badge opencode">opencode</span>
+            <span class="agent-badge windsurf">windsurf</span>
+          </td>
+          <td class="col-desc">
+            <div class="desc-zh">读取、编辑、创建和修复电子表格。支持 .xlsx、.xlsm、.csv、.tsv 格式。添加列、计算公式、应用格式、创建图表、清洗杂乱数据。在表格文件为主要输入或输出时自动触发。</div>
+          </td>
+          <td class="col-usage">
+            <div class="desc-zh">触发场景：.xlsx/.csv/.tsv 文件、创建电子表格、编辑 xlsx、csv 转 xlsx。不适用于：Word 文档、HTML 报告、数据库管道。</div>
+          </td>
+          <td class="col-cmds"><span class="cmd-tag">xlsx</span></td>
+          <td class="col-github">
+            <a class="github-link" href="#" target="_blank" title="查看源码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td class="col-name">pdf</td>
+          <td class="col-agents">
+            <span class="agent-badge opencode">opencode</span>
+            <span class="agent-badge cursor">cursor</span>
+            <span class="agent-badge windsurf">windsurf</span>
+          </td>
+          <td class="col-desc">
+            <div class="desc-zh">完整 PDF 工作流：读取/提取文字和表格、合并多个 PDF、拆分、旋转页面、添加水印、从头创建、填写表单、加密/解密、提取图片、对扫描件执行 OCR 使其可搜索。</div>
+          </td>
+          <td class="col-usage">
+            <div class="desc-zh">触发场景：任何涉及 .pdf 文件的操作——作为输入或输出。合并 PDF、提取文字、OCR 扫描件、填写 PDF 表单、加密 PDF。</div>
+          </td>
+          <td class="col-cmds"><span class="cmd-tag">pdf</span></td>
+          <td class="col-github">
+            <a class="github-link" href="#" target="_blank" title="查看源码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="status-bar">
+      <span>共 12 个 Skill</span>
+      <span>扫描于 2026-07-06 15:30:22</span>
+    </div>
+  </div>
+</div>
+
+<script>
+function fakeRefresh(btn) {
+  btn.innerHTML = '<span class="loading"></span> 扫描中…';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.innerHTML = ` <span style="font-size:12px;">✓</span> 已更新`;
+    setTimeout(() => {
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> 刷新`;
+      btn.disabled = false;
+    }, 1000);
+  }, 1500);
+}
+</script>
+</body>
+</html>

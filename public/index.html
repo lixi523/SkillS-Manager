@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillS Manager</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#f5f6f8;color:#1a1a2e;padding:32px}
+.container{max-width:1600px;margin:0 auto}
+.header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px}
+.header h1{font-size:22px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.header h1 small{font-size:13px;font-weight:400;color:#888}
+.header-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.last-updated{font-size:12px;color:#999;white-space:nowrap}
+.btn-refresh{display:flex;align-items:center;gap:6px;padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer}
+.btn-refresh:hover{background:#1d4ed8}
+.btn-refresh:disabled{opacity:.6;cursor:not-allowed}
+.btn-refresh svg{width:14px;height:14px}
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-bar input{flex:1;min-width:120px;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;outline:none}
+.filter-bar input:focus{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.15)}
+.filter-bar select{padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;background:#fff;outline:none;cursor:pointer}
+.table-scroll{overflow-x:auto}
+.table-wrap{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+table{width:100%;border-collapse:collapse;min-width:640px}
+thead th{background:#f8fafc;padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:#64748b;text-align:left;border-bottom:1px solid #e2e8f0;white-space:nowrap;user-select:none}
+thead th.sortable{cursor:pointer}
+thead th.sortable:hover{background:#eef2ff;color:#4338ca}
+.sort-arrow{display:inline-block;width:16px;text-align:center;font-size:10px;margin-left:4px;color:#94a3b8}
+.sort-arrow.active{color:#4338ca}
+tbody tr{border-bottom:1px solid #f1f5f9;cursor:pointer}
+tbody tr:hover{background:#f8fafc}
+tbody td{padding:12px 14px;font-size:13px;vertical-align:top}
+.col-name{font-weight:600;white-space:nowrap}
+.col-agents{display:flex;flex-wrap:wrap;gap:4px}
+.agent-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;white-space:nowrap}
+.desc-zh{color:#64748b;font-size:12px;line-height:1.5}
+.col-github{text-align:center}
+.github-link{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;color:#64748b;text-decoration:none}
+.github-link:hover{background:#f1f5f9;color:#1a1a2e}
+.github-link svg{width:18px;height:18px}
+.cmd-tag{display:inline-block;margin:1px 2px;padding:1px 6px;border-radius:3px;background:#f0fdf4;color:#166534;font-family:"Cascadia Code","SF Mono",Consolas,monospace;font-size:11px}
+.status-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:12px;color:#64748b}
+.empty{text-align:center;padding:48px;color:#94a3b8;font-size:14px}
+.loading{display:inline-block;width:14px;height:14px;border:2px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center}
+.modal{background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-width:640px;width:90%;max-height:80vh;overflow-y:auto;padding:28px;position:relative}
+.modal-close{position:absolute;top:12px;right:16px;border:none;background:none;font-size:22px;color:#94a3b8;cursor:pointer;line-height:1}
+.modal-close:hover{color:#1a1a2e}
+.modal h2{font-size:18px;margin-bottom:4px}
+.modal .sub{color:#94a3b8;font-size:12px;margin-bottom:20px}
+.modal .field{margin-bottom:14px}
+.modal .field .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:#64748b;margin-bottom:4px}
+.modal .field .val{font-size:13px;line-height:1.6;color:#1a1a2e}
+.modal .field .val.en{color:#64748b}
+@media(max-width:768px){body{padding:16px}.header{flex-direction:column;align-items:stretch}.header-actions{justify-content:space-between}.filter-bar{flex-direction:column}}
+@media(max-width:480px){.last-updated{display:none}thead th,tbody td{padding:8px 10px}.desc-zh{font-size:11px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>SkillS Manager <small>本机 Agent Skill 清单</small></h1>
+    <div class="header-actions">
+      <span class="last-updated" id="updateTime"></span>
+      <button class="btn-refresh" id="btnRefresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        刷新
+      </button>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="搜索 Skill 名称或说明…">
+    <input type="text" id="cmdInput" placeholder="搜索命令关键字…">
+    <select id="agentFilter"><option value="">全部 Agent</option></select>
+  </div>
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="name" style="width:140px">名称<span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort="agents" style="width:160px">已安装 Agent<span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort="desc" style="width:760px">说明<span class="sort-arrow"></span></th>
+            <th class="sortable" data-sort="cmds">命令<span class="sort-arrow"></span></th>
+            <th style="width:60px">GitHub</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="status-bar">
+      <span id="countLabel">共 0 个 Skill</span>
+      <span id="scanTime"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const PALETTE = [
+  "#4338ca","#0d9488","#b45309","#7c3aed","#0891b2","#2563eb","#166534",
+  "#991b1b","#1d4ed8","#6b21a8","#be123c","#15803d","#c026d3","#0369a1",
+  "#65a30d","#d97706","#dc2626","#4f46e5","#059669","#0e7490",
+];
+let skillsData = { skills: [], agents: [], scannedAt: "" };
+let agentColor = {};
+let sortKey = "name", sortDir = "asc";
+
+function colorFor(id) {
+  if (!agentColor[id]) agentColor[id] = PALETTE[Object.keys(agentColor).length % PALETTE.length];
+  return agentColor[id];
+}
+function agentLabel(id) {
+  const a = skillsData.agents.find(function(x) { return x.id === id; });
+  return a ? a.label : id;
+}
+function qs(id) { return document.getElementById(id); }
+function val(id) { return qs(id).value; }
+
+// URL params
+function readParams() {
+  const p = new URLSearchParams(location.search);
+  if (p.has("q")) qs("searchInput").value = p.get("q");
+  if (p.has("c")) qs("cmdInput").value = p.get("c");
+  if (p.has("a")) qs("agentFilter").value = p.get("a");
+  if (p.has("s")) sortKey = p.get("s");
+  if (p.has("o")) sortDir = p.get("o");
+}
+function writeParams() {
+  const p = new URLSearchParams();
+  if (val("searchInput")) p.set("q", val("searchInput"));
+  if (val("cmdInput")) p.set("c", val("cmdInput"));
+  if (val("agentFilter")) p.set("a", val("agentFilter"));
+  p.set("s", sortKey);
+  p.set("o", sortDir);
+  history.replaceState(null, "", "?" + p.toString());
+}
+
+async function load() {
+  const r = await fetch("/api/skills");
+  skillsData = await r.json();
+  readParams();
+  populateFilter();
+  render();
+}
+
+async function refresh() {
+  const btn = qs("btnRefresh");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> 扫描中…';
+  const r = await fetch("/api/refresh", { method: "POST" });
+  skillsData = await r.json();
+  populateFilter();
+  render();
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> 刷新';
+}
+
+function populateFilter() {
+  const sel = qs("agentFilter");
+  const cur = sel.value;
+  const active = new Set(skillsData.skills.flatMap(function(s) { return s.installedOn; }));
+  sel.innerHTML = '<option value="">全部 Agent</option>';
+  for (const a of skillsData.agents) {
+    if (active.has(a.id)) sel.innerHTML += '<option value="' + a.id + '">' + (a.label || a.id) + '</option>';
+  }
+  if ([].some.call(sel.options, function(o) { return o.value === cur; })) sel.value = cur;
+}
+
+function doSort(a, b) {
+  var va, vb;
+  if (sortKey === "name") { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); return sortDir === "asc" ? va < vb ? -1 : va > vb ? 1 : 0 : vb < va ? -1 : vb > va ? 1 : 0; }
+  if (sortKey === "agents") { va = a.installedOn.length; vb = b.installedOn.length; return sortDir === "asc" ? va - vb : vb - va; }
+  if (sortKey === "desc") { va = a.descriptionZh.toLowerCase(); vb = b.descriptionZh.toLowerCase(); return sortDir === "asc" ? va < vb ? -1 : va > vb ? 1 : 0 : vb < va ? -1 : vb > va ? 1 : 0; }
+  if (sortKey === "cmds") { va = a.commands.length; vb = b.commands.length; return sortDir === "asc" ? va - vb : vb - va; }
+  return 0;
+}
+
+function render() {
+  var q = val("searchInput").toLowerCase().trim();
+  var cq = val("cmdInput").toLowerCase().trim();
+  var agent = val("agentFilter");
+  var filtered = skillsData.skills.filter(function(s) {
+    if (agent && s.installedOn.indexOf(agent) === -1) return false;
+    if (q && s.name.toLowerCase().indexOf(q) === -1 && s.description.toLowerCase().indexOf(q) === -1 && s.descriptionZh.toLowerCase().indexOf(q) === -1) return false;
+    if (cq && (!s.commands.length || s.commands.every(function(c) { return c.toLowerCase().indexOf(cq) === -1; }))) return false;
+    return true;
+  });
+
+  // Update sort arrows
+  [].forEach.call(document.querySelectorAll("th.sortable"), function(th) {
+    var arrow = th.querySelector(".sort-arrow");
+    var k = th.getAttribute("data-sort");
+    if (k === sortKey) { arrow.textContent = sortDir === "asc" ? " \u25B2" : " \u25BC"; arrow.className = "sort-arrow active"; }
+    else { arrow.textContent = " \u25B2"; arrow.className = "sort-arrow"; }
+  });
+
+  filtered.sort(doSort);
+
+  var tbody = qs("tbody");
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">\u6CA1\u6709\u627E\u5230\u5339\u914D\u7684 Skill</td></tr>';
+  } else {
+    tbody.innerHTML = filtered.map(function(s) {
+      var agentsHtml = s.installedOn.map(function(a) {
+        var c = colorFor(a);
+        return '<span class="agent-badge" style="background:' + c + '15;color:' + c + '">' + agentLabel(a) + '</span>';
+      }).join("");
+      var cmdsHtml = s.commands.length ? s.commands.map(function(c) { return '<span class="cmd-tag">' + esc(c) + '</span>'; }).join("") : "-";
+      var ghHtml = s.githubUrl ? '<a class="github-link" href="' + s.githubUrl + '" target="_blank" title="\u67E5\u770B\u6E90\u7801" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></a>' : "-";
+      return '<tr onclick="showDetail(\'' + s.name + '\')">\
+        <td class="col-name">' + esc(s.name) + '</td>\
+        <td class="col-agents">' + agentsHtml + '</td>\
+        <td class="col-desc"><div class="desc-zh">' + esc(s.descriptionZh) + '</div></td>\
+        <td>' + cmdsHtml + '</td>\
+        <td class="col-github">' + ghHtml + '</td>\
+      </tr>';
+    }).join("");
+  }
+  var time = skillsData.scannedAt ? new Date(skillsData.scannedAt).toLocaleString("zh-CN") : "";
+  qs("updateTime").textContent = time ? "\u4E0A\u6B21\u66F4\u65B0: " + time : "";
+  qs("scanTime").textContent = time ? "\u626B\u63CF\u4E8E " + time : "";
+  qs("countLabel").textContent = "\u5171 " + filtered.length + " \u4E2A Skill" + (filtered.length < skillsData.skills.length ? "\uFF08\u5171 " + skillsData.skills.length + "\uFF09" : "");
+  writeParams();
+}
+
+function showDetail(name) {
+  var s = skillsData.skills.find(function(x) { return x.name === name; });
+  if (!s) return;
+  var agentsHtml = s.installedOn.map(function(a) {
+    var c = colorFor(a);
+    return '<span class="agent-badge" style="background:' + c + '15;color:' + c + '">' + agentLabel(a) + '</span>';
+  }).join(" ");
+  var cmdsHtml = s.commands.length ? '<div class="val">' + s.commands.map(function(c) { return '<span class="cmd-tag">' + esc(c) + '</span>'; }).join(" ") + '</div>' : '<div class="val">-</div>';
+  var ghHtml = s.githubUrl ? '<a href="' + s.githubUrl + '" target="_blank">' + esc(s.githubUrl) + '</a>' : "-";
+  qs("modalBody").innerHTML = '\
+    <h2>' + esc(s.name) + '</h2>\
+    <div class="sub">' + esc(s.path) + '</div>\
+    <div class="field"><div class="label">\u5B89\u88C5 Agent</div><div class="val">' + agentsHtml + '</div></div>\
+    <div class="field"><div class="label">\u8BF4\u660E\uFF08\u4E2D\u6587\uFF09</div><div class="val">' + esc(s.descriptionZh) + '</div></div>\
+    <div class="field"><div class="label">\u8BF4\u660E\uFF08\u82F1\u6587\u539F\u6587\uFF09</div><div class="val en">' + esc(s.description) + '</div></div>\
+    <div class="field"><div class="label">\u547D\u4EE4</div>' + cmdsHtml + '</div>\
+    <div class="field"><div class="label">GitHub</div><div class="val">' + ghHtml + '</div></div>';
+  qs("modalOverlay").style.display = "flex";
+}
+
+function esc(s) {
+  var d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Event binding
+qs("btnRefresh").addEventListener("click", refresh);
+qs("searchInput").addEventListener("input", render);
+qs("cmdInput").addEventListener("input", render);
+qs("agentFilter").addEventListener("change", render);
+[].forEach.call(document.querySelectorAll("th.sortable"), function(th) {
+  th.addEventListener("click", function() {
+    var k = th.getAttribute("data-sort");
+    if (k === sortKey) sortDir = sortDir === "asc" ? "desc" : "asc";
+    else { sortKey = k; sortDir = "asc"; }
+    render();
+  });
+});
+qs("modalOverlay").addEventListener("click", function(e) {
+  if (e.target === qs("modalOverlay")) qs("modalOverlay").style.display = "none";
+});
+
+load();
+</script>
+<div class="modal-overlay" id="modalOverlay" style="display:none"><div class="modal"><button class="modal-close" onclick="document.getElementById('modalOverlay').style.display='none'">&times;</button><div id="modalBody"></div></div></div>
+</body>
+</html>
