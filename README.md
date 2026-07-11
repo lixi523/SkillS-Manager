@@ -111,4 +111,4 @@ See the `docs/` directory:
 - [Requirements](docs/requirements.md)
 - [Design](docs/design.md)
 - [Implementation](docs/implementation.md)
-- [Test Report](docs/test-report.md)
+- [Release](docs/release.md)

@@ -14,7 +14,7 @@ SkillS Manager/
 │   ├── requirements.md   # 需求分析
 │   ├── design.md         # 设计文档
 │   ├── implementation.md # 实现文档（本文）
-│   └── test-report.md    # 测试报告
+│   └── release.md        # 发布流程
 ├── agents.json           # Agent 配置文件（手动添加名称和路径）
 ├── translations.json     # 英译中对照表
 ├── build-exe.mjs         # 构建脚本（esbuild → SEA → exe）
