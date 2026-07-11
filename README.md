@@ -62,8 +62,41 @@ Contains Simplified Chinese translations for English skill descriptions. Auto-lo
 
 ## Usage / 用法
 
+```text
+SkillManager.exe [port] [options]
+
+  port            自定义端口 (默认 3000)，等价于环境变量 PORT
+  -h, --help      显示帮助
+  --no-open       启动后不自动打开浏览器
+
+示例:
+  SkillManager.exe 4000        # 4000 端口启动
+  PORT=8080 SkillManager.exe   # 用环境变量指定端口
+  SkillManager.exe --no-open   # 启动但不自动开浏览器
+```
+
 - **Port**: Default 3000. Override: `SkillManager.exe 4000` or `env PORT=4000`
 - **Package**: Run `npm run dist` to produce `SkillManager.zip` (exe + configs)
+
+## Code Signing / 数字签名
+
+The standalone exe is built via Node.js SEA. It is delivered **unsigned** — the
+original node.exe Authenticode signature is intentionally stripped during the
+build (`tools/strip-sig.py`). Windows SmartScreen may show a warning on first
+run; click "Run anyway" / "仍要运行" to proceed. To ship a signed binary, obtain
+a code-signing certificate and run `signtool sign /fd SHA256 SkillManager.exe`
+after `npm run build-exe`.
+
+## Adding Translations / 新增翻译
+
+When new skills appear with English-only descriptions:
+
+```bash
+# start the exe, then:
+node tools/extract-untranslated.mjs          # -> tools/untranslated-draft.json
+# open it, fill in Simplified Chinese, merge into translations.json
+npm run dist                                  # rebuild exe + zip
+```
 
 ## Tech Stack / 技术栈
 

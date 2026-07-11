@@ -48,6 +48,14 @@ const nodePath = process.execPath;
 const seaExe = "SkillManager.exe";
 cpSync(nodePath, seaExe);
 
+// Strip the original (now-invalid) Authenticode signature before injection.
+// This avoids the "signature seems corrupted" warning and SmartScreen issues.
+try {
+  execSync(`python tools/strip-sig.py ${seaExe}`, { stdio: "inherit" });
+} catch {
+  console.log("strip-sig skipped (python unavailable) — exe may show signature warning");
+}
+
 writeFileSync(
   "dist/inject.cjs",
   `const { inject } = require("postject");

@@ -5,3 +5,5 @@ SkillManager.zip
 *.blob
 agents.json
 translations.json
+tools/untranslated-draft.json
+dist/sea-prep.blob

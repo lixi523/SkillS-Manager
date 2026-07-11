@@ -18,6 +18,9 @@ SkillS Manager/
 ├── agents.json           # Agent 配置文件（手动添加名称和路径）
 ├── translations.json     # 英译中对照表
 ├── build-exe.mjs         # 构建脚本（esbuild → SEA → exe）
+├── tools/
+│   ├── strip-sig.py      # 构建时剥离 node.exe 原始签名
+│   └── extract-untranslated.mjs # 导出待翻译 skill 清单
 ├── package.json
 ├── tsconfig.json
 ├── .gitignore
